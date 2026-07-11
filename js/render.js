@@ -4,8 +4,8 @@ const Render = {
     ctx: null,
     canvas: null,
     CELL_SIZE: 20,
-    CANVAS_SIZE: 400,
     _lastGridSize: null,
+    particles: [],
 
     init() {
         this.canvas = document.getElementById('gameCanvas');
@@ -14,11 +14,13 @@ const Render = {
         Events.on('settings:changed', (s) => {
             if (s.gridSize !== this._lastGridSize) this.rebuildCanvas();
         });
+        Events.on('food:eaten', (data) => this._spawnParticles(data));
     },
 
     rebuildCanvas() {
         const gridSize = Settings.get('gridSize');
-        this.CELL_SIZE = Math.floor(this.CANVAS_SIZE / gridSize);
+        const displaySize = 400;
+        this.CELL_SIZE = Math.ceil(displaySize / gridSize);
         this._lastGridSize = gridSize;
         this.canvas.width = this.CELL_SIZE * gridSize;
         this.canvas.height = this.CELL_SIZE * gridSize;
@@ -40,6 +42,7 @@ const Render = {
         this._drawFood(state.food, state.foodType);
         this._drawPowerupSpawn();
         this._drawSnake(snake, snakePrev, direction, alpha, gameOver);
+        this._updateAndDrawParticles();
     },
 
     _bgColor() {
@@ -242,6 +245,55 @@ const Render = {
         ctx.arcTo(x, y + height, x, y, r);
         ctx.arcTo(x, y, x + width, y, r);
         ctx.closePath();
+    },
+
+    _spawnParticles(data) {
+        const info = Food.getTypeInfo(data.type);
+        const cs = this.CELL_SIZE;
+        const cx = data.x * cs + cs / 2;
+        const cy = data.y * cs + cs / 2;
+        const count = 10;
+        const color = info.color || '#ff3366';
+
+        for (let i = 0; i < count; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 1 + Math.random() * 3;
+            this.particles.push({
+                x: cx,
+                y: cy,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                color: color,
+                life: 1,
+                decay: 0.02 + Math.random() * 0.02,
+                size: 1.5 + Math.random() * 2.5
+            });
+        }
+    },
+
+    _updateAndDrawParticles() {
+        if (this.particles.length === 0) return;
+        const ctx = this.ctx;
+
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.05;
+            p.life -= p.decay;
+
+            if (p.life <= 0) {
+                this.particles.splice(i, 1);
+                continue;
+            }
+
+            ctx.globalAlpha = p.life;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
     }
 };
 

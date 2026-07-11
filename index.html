@@ -27,16 +27,12 @@
             </div>
         </div>
 
-        <div class="canvas-wrapper">
-            <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div class="powerup-bar-wrapper">
+            <div id="powerupBar" class="powerup-bar hidden"></div>
+        </div>
 
-            <div id="powerupBar" class="powerup-bar hidden">
-                <div id="powerupIcon" class="powerup-icon"></div>
-                <div id="powerupLabel" class="powerup-label">INVINCIBLE</div>
-                <div class="powerup-timer-track">
-                    <div id="powerupTimer" class="powerup-timer-fill" style="width:100%"></div>
-                </div>
-            </div>
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
 
             <div id="startOverlay" class="overlay">
                 <div class="overlay-content">
@@ -57,9 +53,22 @@
                 <div class="overlay-content">
                     <h2>GAME OVER</h2>
                     <p class="final-score">Final Score: <span id="finalScore">0</span></p>
+                    <p id="bestLevel" class="best-level">Best Level: <span id="bestLevelValue">1</span></p>
                     <div id="highScorePrompt" class="high-score-prompt hidden">
                         <p class="new-record">NEW HIGH SCORE!</p>
                         <input id="nameInput" class="name-input" type="text" maxlength="3" placeholder="AAA" aria-label="Enter 3-letter name">
+                        <div id="nameGrid" class="name-grid hidden">
+                            <div class="name-slots">
+                                <span id="nameSlot0" class="name-slot">_</span>
+                                <span id="nameSlot1" class="name-slot">_</span>
+                                <span id="nameSlot2" class="name-slot">_</span>
+                            </div>
+                            <div id="nameButtons" class="name-buttons"></div>
+                            <div class="name-actions">
+                                <button id="nameBackBtn" class="name-action-btn">BACK</button>
+                                <button id="nameSaveBtn" class="name-action-btn primary">SAVE</button>
+                            </div>
+                        </div>
                     </div>
                     <div id="gameOverButtons" class="overlay-buttons">
                         <button id="leaderboardBtn" class="btn btn-secondary">LEADERBOARD</button>

@@ -22,6 +22,7 @@ const Game = {
     state: STATE.IDLE,
     score: 0,
     speed: 150,
+    _baseSpeed: 150,
     _lastTime: 0,
     _accumulator: 0,
     _animationId: null,
@@ -32,6 +33,8 @@ const Game = {
     direction: DIRECTIONS.RIGHT,
     inputQueue: [],
     alpha: 0,
+    _nameChars: ['', '', ''],
+    _namePos: 0,
 
     ui: {},
 
@@ -59,6 +62,8 @@ const Game = {
             score: document.getElementById('score'),
             level: document.getElementById('level'),
             finalScore: document.getElementById('finalScore'),
+            bestLevelLabel: document.getElementById('bestLevel'),
+            bestLevelValue: document.getElementById('bestLevelValue'),
             startOverlay: document.getElementById('startOverlay'),
             gameOverOverlay: document.getElementById('gameOverOverlay'),
             pauseOverlay: document.getElementById('pauseOverlay'),
@@ -69,11 +74,17 @@ const Game = {
             settingsBtn: document.getElementById('settingsBtn'),
             closeSettingsBtn: document.getElementById('closeSettingsBtn'),
             powerupBar: document.getElementById('powerupBar'),
-            powerupIcon: document.getElementById('powerupIcon'),
-            powerupLabel: document.getElementById('powerupLabel'),
-            powerupTimer: document.getElementById('powerupTimer'),
             highScorePrompt: document.getElementById('highScorePrompt'),
             nameInput: document.getElementById('nameInput'),
+            nameGrid: document.getElementById('nameGrid'),
+            nameSlots: [
+                document.getElementById('nameSlot0'),
+                document.getElementById('nameSlot1'),
+                document.getElementById('nameSlot2')
+            ],
+            nameButtons: document.getElementById('nameButtons'),
+            nameBackBtn: document.getElementById('nameBackBtn'),
+            nameSaveBtn: document.getElementById('nameSaveBtn'),
             gameOverButtons: document.getElementById('gameOverButtons'),
             leaderboardBtn: document.getElementById('leaderboardBtn'),
             leaderboardPanel: document.getElementById('leaderboardPanel'),
@@ -99,6 +110,7 @@ const Game = {
         this.ui.closeSettingsBtn.addEventListener('click', () => this.closeSettings());
         this.ui.leaderboardBtn.addEventListener('click', () => this._openLeaderboard());
         this.ui.closeLeaderboardBtn.addEventListener('click', () => this._closeLeaderboard());
+        this.ui.nameSaveBtn.addEventListener('click', () => this._saveNameFromGrid());
 
         const input = this.ui.nameInput;
         if (input) {
@@ -110,11 +122,16 @@ const Game = {
                 if (input.value !== v) input.value = v;
             });
         }
+
+        this._buildNameGrid();
     },
 
     _saveAndRestart() {
         if (this.state === STATE.GAME_OVER && this._unsavedHighScore) {
-            Settings.addHighScore(this.ui.nameInput.value, this.score);
+            const name = this._isTouchDevice()
+                ? this._nameChars.join('')
+                : this.ui.nameInput.value;
+            Settings.addHighScore(name, this.score);
             this._renderLeaderboard();
             this.ui.highScorePrompt.classList.add('hidden');
             this._unsavedHighScore = false;
@@ -164,7 +181,7 @@ const Game = {
         Events.on('powerup:state', (data) => this._renderPowerupBar(data));
         Events.on('level:up', (data) => {
             this.ui.level.textContent = data.level;
-            this.speed = Levels.getSpeedTier(this.speed, MIN_SPEED);
+            this._baseSpeed = Levels.getSpeedTier(this._baseSpeed, MIN_SPEED);
         });
     },
 
@@ -215,7 +232,7 @@ const Game = {
 
         const clamp = Settings.get('inputResponsiveness');
         if (clamp > 0) {
-            const threshold = this.speed * clamp;
+            const threshold = this._getEffectiveSpeed() * clamp;
             if (this._accumulator < threshold) {
                 this._accumulator = threshold;
             }
@@ -263,6 +280,13 @@ const Game = {
         Events.emit('snake:die');
         Events.emit('game:over', { score: this.score });
 
+        const currentLevel = Levels.level;
+        const bestLevel = Settings.get('bestLevel');
+        if (currentLevel > bestLevel) {
+            Settings.set('bestLevel', currentLevel);
+        }
+        this.ui.bestLevelValue.textContent = Math.max(currentLevel, bestLevel);
+
         this.ui.finalScore.textContent = this.score;
         this.ui.leaderboardPanel.classList.add('hidden');
         this.ui.gameOverButtons.classList.remove('hidden');
@@ -270,8 +294,18 @@ const Game = {
         this._unsavedHighScore = isNewHigh && this.score > 0;
         if (this._unsavedHighScore) {
             this.ui.highScorePrompt.classList.remove('hidden');
-            this.ui.nameInput.value = '';
-            this.ui.nameInput.focus();
+            this._nameChars = ['', '', ''];
+            this._namePos = 0;
+            if (this._isTouchDevice()) {
+                this.ui.nameInput.classList.add('hidden');
+                this.ui.nameGrid.classList.remove('hidden');
+                this._refreshNameSlots();
+            } else {
+                this.ui.nameInput.classList.remove('hidden');
+                this.ui.nameGrid.classList.add('hidden');
+                this.ui.nameInput.value = '';
+                this.ui.nameInput.focus();
+            }
         } else {
             this.ui.highScorePrompt.classList.add('hidden');
         }
@@ -314,6 +348,55 @@ const Game = {
         }
     },
 
+    _buildNameGrid() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        const container = this.ui.nameButtons;
+        container.innerHTML = '';
+        for (let i = 0; i < chars.length; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'name-btn';
+            btn.textContent = chars[i];
+            btn.addEventListener('click', () => this._handleNameChar(chars[i]));
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this._handleNameChar(chars[i]);
+            });
+            container.appendChild(btn);
+        }
+
+        this.ui.nameBackBtn.addEventListener('click', () => {
+            if (this._namePos > 0) {
+                this._namePos--;
+                this._nameChars[this._namePos] = '';
+                this._refreshNameSlots();
+            }
+        });
+    },
+
+    _handleNameChar(char) {
+        if (this._namePos < 3) {
+            this._nameChars[this._namePos] = char;
+            this._namePos++;
+            this._refreshNameSlots();
+        }
+    },
+
+    _refreshNameSlots() {
+        for (let i = 0; i < 3; i++) {
+            const slot = this.ui.nameSlots[i];
+            slot.textContent = this._nameChars[i] || '_';
+            if (this._nameChars[i]) {
+                slot.classList.add('filled');
+            } else {
+                slot.classList.remove('filled');
+            }
+        }
+    },
+
+    _saveNameFromGrid() {
+        this._saveAndRestart();
+    },
+
     resetGame() {
         const gridSize = Settings.get('gridSize');
         const cx = Math.floor(gridSize / 2);
@@ -329,6 +412,7 @@ const Game = {
         this._unsavedHighScore = false;
         this.score = 0;
         this.speed = Settings.get('initialSpeed');
+        this._baseSpeed = this.speed;
         this.alpha = 0;
         this._accumulator = 0;
 
@@ -344,6 +428,10 @@ const Game = {
         Food.spawn(this.snake, Levels.getWalls());
     },
 
+    _getEffectiveSpeed() {
+        return Powerups.isActive('slowmo') ? this._baseSpeed * 2 : this._baseSpeed;
+    },
+
     _gameLoop(currentTime) {
         if (this.state !== STATE.PLAYING) return;
 
@@ -351,13 +439,14 @@ const Game = {
         this._lastTime = currentTime;
         this._accumulator += deltaTime;
 
-        while (this._accumulator >= this.speed) {
+        const effectiveSpeed = this._getEffectiveSpeed();
+        while (this._accumulator >= effectiveSpeed) {
             this._update();
-            this._accumulator -= this.speed;
+            this._accumulator -= effectiveSpeed;
             if (this.state !== STATE.PLAYING) return;
         }
 
-        this.alpha = this._accumulator / this.speed;
+        this.alpha = this._accumulator / effectiveSpeed;
         Render.render(this._renderState());
         this._animationId = requestAnimationFrame((t) => this._gameLoop(t));
     },
@@ -387,7 +476,7 @@ const Game = {
         const willEat = Food.isAt(head.x, head.y);
         const willShrinkEat = willEat && Food.getInfo().effect === 'shrink';
         const checkBody = willShrinkEat ? this.snake.slice(0, -2) : this.snake;
-        if (checkBody.some(seg => seg.x === head.x && seg.y === head.y)) {
+        if (!Powerups.isActive('invincible') && checkBody.some(seg => seg.x === head.x && seg.y === head.y)) {
             this.gameOver();
             return;
         }
@@ -405,10 +494,10 @@ const Game = {
             const multiplier = Powerups.isActive('double') ? 2 : 1;
             this.score += info.score * multiplier;
             this.ui.score.textContent = this.score;
-            Events.emit('food:eaten', { type: Food.current.type, score: info.score });
+            Events.emit('food:eaten', { type: Food.current.type, score: info.score, x: head.x, y: head.y });
 
-            if (info.effect === 'speed' && this.speed > MIN_SPEED) {
-                this.speed = Math.max(MIN_SPEED, this.speed - SPEED_INCREMENT * 3);
+            if (info.effect === 'speed' && this._baseSpeed > MIN_SPEED) {
+                this._baseSpeed = Math.max(MIN_SPEED, this._baseSpeed - SPEED_INCREMENT * 3);
             }
             if (info.effect === 'shrink' && this.snake.length > 3) {
                 this.snake.pop();
@@ -417,7 +506,7 @@ const Game = {
 
             const levelUp = Levels.onFoodEaten();
             if (levelUp) {
-                this.speed = Levels.getSpeedTier(this.speed, MIN_SPEED);
+                this._baseSpeed = Levels.getSpeedTier(this._baseSpeed, MIN_SPEED);
             }
 
             Food.spawn(this.snake, Levels.getWalls());
@@ -443,7 +532,7 @@ const Game = {
     },
 
     _renderPowerupBar(data) {
-        if (!data) {
+        if (!data || data.length === 0) {
             this.ui.powerupBar.classList.add('hidden');
             if (this._powerupTimerInterval) {
                 clearInterval(this._powerupTimerInterval);
@@ -451,24 +540,36 @@ const Game = {
             }
             return;
         }
-        const info = Powerups.getInfo(data.type);
-        if (!info) return;
-        this.ui.powerupBar.classList.remove('hidden');
-        this.ui.powerupIcon.textContent = info.icon;
-        this.ui.powerupIcon.style.color = info.color;
-        this.ui.powerupLabel.textContent = info.label;
-        this.ui.powerupLabel.style.color = info.color;
-        this.ui.powerupTimer.style.background = info.color;
 
         if (this._powerupTimerInterval) clearInterval(this._powerupTimerInterval);
-        this._powerupTimerInterval = setInterval(() => {
-            const progress = Powerups.getProgress();
-            this.ui.powerupTimer.style.width = `${Math.max(0, progress * 100)}%`;
-            if (progress <= 0) {
-                clearInterval(this._powerupTimerInterval);
-                this._powerupTimerInterval = null;
-            }
-        }, 50);
+        this._powerupTimerInterval = setInterval(() => this._refreshPowerupRows(), 50);
+
+        this._refreshPowerupRows();
+    },
+
+    _refreshPowerupRows() {
+        const entries = Powerups.current.map(e => {
+            const info = Powerups.getInfo(e.type);
+            const now = performance.now();
+            const remaining = Math.max(0, e.expires - now);
+            const progress = remaining / e.duration;
+            return { type: e.type, color: info ? info.color : '#fff', icon: info ? info.icon : '?', label: info ? info.label : e.type, progress };
+        });
+
+        if (entries.length === 0) {
+            this.ui.powerupBar.classList.add('hidden');
+            this.ui.powerupBar.innerHTML = '';
+            return;
+        }
+
+        this.ui.powerupBar.classList.remove('hidden');
+        this.ui.powerupBar.innerHTML = entries.map(e =>
+            `<div class="powerup-row">
+                <span class="powerup-row-icon" style="color:${e.color}">${e.icon}</span>
+                <span class="powerup-row-label" style="color:${e.color}">${e.label}</span>
+                <span class="powerup-row-track"><span class="powerup-row-fill" style="width:${Math.max(0, e.progress * 100)}%;background:${e.color}"></span></span>
+            </div>`
+        ).join('');
     },
 
     _hideAllOverlays() {
