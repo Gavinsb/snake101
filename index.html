@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Snake Game</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>SNAKE</h1>
+            <div class="header-right">
+                <div class="level-badge">
+                    <span class="level-label">LVL</span>
+                    <span id="level" class="level-value">1</span>
+                </div>
+                <div class="score-board">
+                    <span class="score-label">SCORE</span>
+                    <span id="score" class="score-value">0</span>
+                </div>
+                <button id="settingsBtn" class="icon-btn" aria-label="Settings" title="Settings">
+                    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+                        <path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94 0 .31.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+            <div id="powerupBar" class="powerup-bar hidden">
+                <div id="powerupIcon" class="powerup-icon"></div>
+                <div id="powerupLabel" class="powerup-label">INVINCIBLE</div>
+                <div class="powerup-timer-track">
+                    <div id="powerupTimer" class="powerup-timer-fill" style="width:100%"></div>
+                </div>
+            </div>
+
+            <div id="startOverlay" class="overlay">
+                <div class="overlay-content">
+                    <h2>SNAKE</h2>
+                    <p class="subtitle">Classic Arcade Game</p>
+                    <button id="startBtn" class="btn btn-primary">START GAME</button>
+                    <p class="controls-hint">
+                        <span class="key">▲</span>
+                        <span class="key">▼</span>
+                        <span class="key">◄</span>
+                        <span class="key">►</span>
+                        or Swipe to Move
+                    </p>
+                </div>
+            </div>
+
+            <div id="gameOverOverlay" class="overlay hidden">
+                <div class="overlay-content">
+                    <h2>GAME OVER</h2>
+                    <p class="final-score">Final Score: <span id="finalScore">0</span></p>
+                    <div id="highScorePrompt" class="high-score-prompt hidden">
+                        <p class="new-record">NEW HIGH SCORE!</p>
+                        <input id="nameInput" class="name-input" type="text" maxlength="3" placeholder="AAA" aria-label="Enter 3-letter name">
+                    </div>
+                    <div id="gameOverButtons" class="overlay-buttons">
+                        <button id="leaderboardBtn" class="btn btn-secondary">LEADERBOARD</button>
+                        <button id="restartBtn" class="btn btn-primary">PLAY AGAIN</button>
+                    </div>
+                    <div id="leaderboardPanel" class="leaderboard-panel hidden">
+                        <h3>TOP SCORES</h3>
+                        <ol id="leaderboardList" class="leaderboard-list"></ol>
+                        <button id="closeLeaderboardBtn" class="btn btn-secondary">CLOSE</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="pauseOverlay" class="overlay hidden">
+                <div class="overlay-content">
+                    <h2>PAUSED</h2>
+                    <button id="resumeBtn" class="btn btn-secondary">RESUME</button>
+                </div>
+            </div>
+
+            <div id="settingsOverlay" class="overlay hidden">
+                <div class="overlay-content settings-content">
+                    <h2>SETTINGS</h2>
+                    <div class="settings-form" id="settingsForm">
+                        <label class="setting-row">
+                            <span>Grid Size</span>
+                            <select id="gridSizeSelect">
+                                <option value="15">15 × 15</option>
+                                <option value="20" selected>20 × 20</option>
+                                <option value="25">25 × 25</option>
+                                <option value="30">30 × 30</option>
+                            </select>
+                        </label>
+                        <label class="setting-row">
+                            <span>Initial Speed</span>
+                            <select id="speedSelect">
+                                <option value="200">Slow</option>
+                                <option value="150" selected>Normal</option>
+                                <option value="100">Fast</option>
+                            </select>
+                        </label>
+                        <label class="setting-row">
+                            <span>Color Theme</span>
+                            <select id="themeSelect">
+                                <option value="auto" selected>Auto</option>
+                                <option value="dark">Dark</option>
+                                <option value="light">Light</option>
+                            </select>
+                        </label>
+                        <label class="setting-row toggle-row">
+                            <span>Sound</span>
+                            <input id="soundToggle" type="checkbox" checked>
+                            <span class="switch"></span>
+                        </label>
+                        <label class="setting-row toggle-row" id="dpadRow">
+                            <span>On-screen D-pad</span>
+                            <input id="dpadToggle" type="checkbox">
+                            <span class="switch"></span>
+                        </label>
+                        <label class="setting-row toggle-row">
+                            <span>High Contrast</span>
+                            <input id="contrastToggle" type="checkbox">
+                            <span class="switch"></span>
+                        </label>
+                        <label class="setting-row slider-row">
+                            <span>Input Responsiveness</span>
+                            <input id="responsivenessRange" type="range" min="0" max="1" step="0.1" value="0.5">
+                            <span id="responsivenessValue" class="slider-value">50%</span>
+                        </label>
+                    </div>
+                    <button id="closeSettingsBtn" class="btn btn-primary">DONE</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="dpad" class="dpad hidden">
+            <button class="dpad-btn dpad-up" data-dir="up" aria-label="Up">▲</button>
+            <button class="dpad-btn dpad-left" data-dir="left" aria-label="Left">◄</button>
+            <button class="dpad-btn dpad-right" data-dir="right" aria-label="Right">►</button>
+            <button class="dpad-btn dpad-down" data-dir="down" aria-label="Down">▼</button>
+        </div>
+    </div>
+
+    <script src="js/events.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/food.js"></script>
+    <script src="js/powerups.js"></script>
+    <script src="js/levels.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/input.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
