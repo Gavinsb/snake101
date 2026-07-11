@@ -198,6 +198,7 @@ nextDirection: {x, y} // buffered input (applied next tick)
 - **Persistent best level** (`js/settings.js`, `js/game.js`): `bestLevel` added to settings. Saved on game over; displayed on game-over overlay.
 - **Touch-friendly name input grid** (`index.html`, `css/style.css`, `js/game.js`): on touch devices, a 6×6 grid of A-Z + 0-9 buttons replaces the keyboard text input. 3 character slots fill on tap. BACK deletes, SAVE confirms.
 - **Fix 's' key swallowing** (`js/input.js`): WASD keys during game-over/idle no longer call `e.preventDefault()`, allowing 's', 'a', 'w', 'd' to type into the name input. Arrow keys still block scrolling.
+- **Fix powerup timer not displaying** (`css/style.css`): `.powerup-row-fill` and `.powerup-row-track` needed explicit `display: block` — `<span>` elements don't honor `height`/`width` without it.
 - **`"use strict"`** on all modules (from v3.1).
 
 **Resolved Limitations (from v3)**
