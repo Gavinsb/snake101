@@ -48,11 +48,15 @@ const Input = {
         };
 
         if (DIRS[key]) {
-            e.preventDefault();
             if (game.state === 'playing') {
+                e.preventDefault();
                 game.setDirection(DIRS[key]);
+                return;
             }
-            return;
+            if (key.startsWith('Arrow')) {
+                e.preventDefault();
+                return;
+            }
         }
 
         if (key === ' ' || key === 'Enter') {

@@ -1,4 +1,4 @@
-# Design Document & Version Record - Snake Game v3.1
+# Design Document & Version Record - Snake Game v4.0
 
 ## System Architecture (v2.0)
 
@@ -183,6 +183,42 @@ nextDirection: {x, y} // buffered input (applied next tick)
 - Manual smoke: start, eat each food type, all 3 power-ups, level transitions, pause/resume, restart, settings save/reload, theme switch, high-contrast toggle, D-pad visibility toggle, name entry + leaderboard render
 - Event bus: verified audio/drops on `settings:changed`, powerup bar on `powerup:state`
 - localStorage: verified `snakeSettings` + `snakeHighScores` persistence across reload
+
+---
+
+### v4.0 - Stackable Power-ups, Particles, Wall Patterns & Mobile UX (2026-07-11)
+
+**Scope Delivered**
+- **Stackable power-ups** (`js/powerups.js`): `current` changed from single object to array (max 3). New `activate` pushes; when full, oldest is replaced (FIFO). Each entry has its own `setTimeout`. `isActive(type)` checks all entries. `getProgress/getTimeRemaining` return max across all active.
+- **Invincibility & slowmo actually work** (`js/game.js`): invincibility was defined in v2.0 but never checked in collision — now skips body collision. Slowmo was defined but never applied to game speed — now `_baseSpeed` / `_getEffectiveSpeed()` doubles tick interval when active.
+- **Multi-row powerup bar** (`js/game.js`, `css/style.css`): `_renderPowerupBar` generates one compact row per active power-up (icon, label, progress bar). Bar moved outside `.canvas-wrapper` into a fixed-height wrapper above the board — visually transparent, no layout shift.
+- **Particle effects on food eat** (`js/render.js`): 10 particles burst from food position on eat, matching food type color, with random velocity, gravity, and fade over ~400ms lifetime.
+- **13 wall patterns** (`js/levels.js`): 8 new hand-designed patterns added (13 total). `_applyWalls` uses `(level - 2) % WALL_PATTERNS.length` so patterns cycle indefinitely rather than hitting a dead end at the last pattern.
+- **Canvas sizing** (`js/render.js`): removed hardcoded `CANVAS_SIZE = 400`. `rebuildCanvas()` uses `Math.ceil(400 / gridSize)` so canvas is always ≥400px — CSS downscales cleanly, no upscaling blur.
+- **Persistent best level** (`js/settings.js`, `js/game.js`): `bestLevel` added to settings. Saved on game over; displayed on game-over overlay.
+- **Touch-friendly name input grid** (`index.html`, `css/style.css`, `js/game.js`): on touch devices, a 6×6 grid of A-Z + 0-9 buttons replaces the keyboard text input. 3 character slots fill on tap. BACK deletes, SAVE confirms.
+- **Fix 's' key swallowing** (`js/input.js`): WASD keys during game-over/idle no longer call `e.preventDefault()`, allowing 's', 'a', 'w', 'd' to type into the name input. Arrow keys still block scrolling.
+- **`"use strict"`** on all modules (from v3.1).
+
+**Resolved Limitations (from v3)**
+| v3 Limitation | v4 Resolution |
+|---------------|---------------|
+| Wall pattern variety still cycles at 5 | 13 patterns, modulo cycling |
+| Power-ups non-stackable | Stackable up to 3, oldest replaced |
+| No persistent "level reached" stat | `bestLevel` saved to localStorage |
+| Mobile keyboard may cover name input | 6×6 button grid replaces keyboard on touch |
+| Powerup bar visually blocks game area | Moved above board, semi-transparent, fixed wrapper |
+| Accumulator clamp inverted (v3.1 fix) | (already fixed in v3.1) |
+
+**Testing Done**
+- Syntax: `node -c js/*.js` — all 9 modules pass
+- Stacking: collect invincible + double + slowmo → 3 timer rows visible; collect 4th → oldest drops; timers expire independently
+- Invincibility: snake passes through own body without dying
+- Slowmo: snake visibly slows to half speed when active
+- Particles: visible burst on food eat, color-matched, fades out
+- Level stat: displays on game over, persists across reload
+- Name grid: touch grid shows on mobile emulation; A-Z/0-9 buttons fill slots; BACK deletes; SAVE saves
+- Wall patterns: verified 13 unique patterns at levels 2–14+
 
 ---
 

@@ -7,7 +7,8 @@ const DEFAULT_SETTINGS = {
     sound: true,
     dpad: 'auto',
     highContrast: false,
-    inputResponsiveness: 0.5
+    inputResponsiveness: 0.5,
+    bestLevel: 0
 };
 
 const SETTINGS_KEY = 'snakeSettings';

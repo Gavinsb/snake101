@@ -25,22 +25,29 @@ const POWERUP_TYPES = {
 };
 
 const SPAWN_CHANCE = 0.10;
+const MAX_ACTIVE = 3;
 
 const Powerups = {
-    current: null,
-    _expireTimer: null,
+    current: [],
     _activeSpawn: null,
 
     reset() {
-        this.clearTimer();
+        this.clearAllTimers();
         this.clearSpawn();
-        this.current = null;
+        this.current = [];
     },
 
-    clearTimer() {
-        if (this._expireTimer) {
-            clearTimeout(this._expireTimer);
-            this._expireTimer = null;
+    clearAllTimers() {
+        this.current.forEach(entry => {
+            if (entry.timerId) clearTimeout(entry.timerId);
+        });
+        this.current = [];
+    },
+
+    clearTimer(index) {
+        if (index >= 0 && index < this.current.length) {
+            if (this.current[index].timerId) clearTimeout(this.current[index].timerId);
+            this.current.splice(index, 1);
         }
     },
 
@@ -51,7 +58,7 @@ const Powerups = {
     },
 
     maybeSpawnOnFoodEaten(snake, walls) {
-        if (this._activeSpawn || this.current) return false;
+        if (this._activeSpawn) return false;
         if (Math.random() > SPAWN_CHANCE) return false;
         return this.spawnRandom(snake, walls);
     },
@@ -95,44 +102,51 @@ const Powerups = {
     },
 
     activate(type) {
-        this.clearTimer();
         const info = POWERUP_TYPES[type];
         if (!info) return;
 
-        this.current = {
+        if (this.current.length >= MAX_ACTIVE) {
+            this.clearTimer(0);
+        }
+
+        const entry = {
             type,
             expires: performance.now() + info.duration,
-            duration: info.duration
+            duration: info.duration,
+            timerId: setTimeout(() => this.expire(entry), info.duration)
         };
 
-        Events.emit('powerup:activate', { type, duration: info.duration });
-        Events.emit('powerup:state', { ...this.current });
+        this.current.push(entry);
 
-        this._expireTimer = setTimeout(() => this.expire(), info.duration);
+        Events.emit('powerup:activate', { type, duration: info.duration });
+        Events.emit('powerup:state', this.current.map(e => ({ type: e.type, expires: e.expires, duration: e.duration })));
     },
 
-    expire() {
-        if (!this.current) return;
-        const type = this.current.type;
-        this.current = null;
-        this.clearTimer();
+    expire(entry) {
+        const idx = this.current.indexOf(entry);
+        if (idx === -1) return;
+        if (this.current[idx].timerId) clearTimeout(this.current[idx].timerId);
+        const type = this.current[idx].type;
+        this.current.splice(idx, 1);
         Events.emit('powerup:expire', { type });
-        Events.emit('powerup:state', null);
+        Events.emit('powerup:state', this.current.map(e => ({ type: e.type, expires: e.expires, duration: e.duration })));
     },
 
     isActive(type = null) {
-        if (!this.current) return false;
-        return type ? this.current.type === type : true;
+        if (this.current.length === 0) return false;
+        return type ? this.current.some(e => e.type === type) : true;
     },
 
     getTimeRemaining() {
-        if (!this.current) return 0;
-        return Math.max(0, this.current.expires - performance.now());
+        if (this.current.length === 0) return 0;
+        const now = performance.now();
+        return Math.max(0, ...this.current.map(e => e.expires - now));
     },
 
     getProgress() {
-        if (!this.current) return 0;
-        return this.getTimeRemaining() / this.current.duration;
+        if (this.current.length === 0) return 0;
+        const now = performance.now();
+        return Math.max(0, ...this.current.map(e => (e.expires - now) / e.duration));
     },
 
     getInfo(type) {
