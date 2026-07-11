@@ -1,3 +1,5 @@
+'use strict';
+
 const Input = {
     _state: null,
     _touchStartX: 0,

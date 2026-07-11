@@ -1,3 +1,5 @@
+'use strict';
+
 const FOODS_PER_LEVEL = 5;
 const SPEED_TIER_DROP = 10;
 

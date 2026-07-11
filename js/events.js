@@ -1,3 +1,5 @@
+'use strict';
+
 const Events = {
     _handlers: new Map(),
 

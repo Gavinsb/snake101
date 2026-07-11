@@ -1,3 +1,5 @@
+'use strict';
+
 const Audio = {
     ctx: null,
     enabled: true,

@@ -1,3 +1,5 @@
+'use strict';
+
 const DEFAULT_SETTINGS = {
     gridSize: 20,
     initialSpeed: 150,
@@ -92,7 +94,7 @@ const Settings = {
         if (score <= 0) return false;
         const scores = this.loadHighScores();
         if (scores.length < 5) return true;
-        return score > scores[scores.length - 1].score;
+        return score > scores[4].score;
     },
 
     getTopScores(n = 5) {

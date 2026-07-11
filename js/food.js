@@ -1,3 +1,5 @@
+'use strict';
+
 const FOOD_TYPES = {
     normal: {
         weight: 70,

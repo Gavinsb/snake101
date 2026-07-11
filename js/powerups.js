@@ -1,3 +1,5 @@
+'use strict';
+
 const POWERUP_TYPES = {
     invincible: {
         duration: 5000,

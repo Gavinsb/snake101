@@ -1,8 +1,11 @@
+'use strict';
+
 const Render = {
     ctx: null,
     canvas: null,
     CELL_SIZE: 20,
     CANVAS_SIZE: 400,
+    _lastGridSize: null,
 
     init() {
         this.canvas = document.getElementById('gameCanvas');
@@ -209,22 +212,18 @@ const Render = {
         const eyeOffset = 5;
         let eye1X, eye1Y, eye2X, eye2Y;
 
-        switch (true) {
-            case direction.x === 1:
-                eye1X = x + size - eyeOffset; eye1Y = y + eyeOffset;
-                eye2X = x + size - eyeOffset; eye2Y = y + size - eyeOffset;
-                break;
-            case direction.x === -1:
-                eye1X = x + eyeOffset; eye1Y = y + eyeOffset;
-                eye2X = x + eyeOffset; eye2Y = y + size - eyeOffset;
-                break;
-            case direction.y === -1:
-                eye1X = x + eyeOffset; eye1Y = y + eyeOffset;
-                eye2X = x + size - eyeOffset; eye2Y = y + eyeOffset;
-                break;
-            default:
-                eye1X = x + eyeOffset; eye1Y = y + size - eyeOffset;
-                eye2X = x + size - eyeOffset; eye2Y = y + size - eyeOffset;
+        if (direction.x === 1) {
+            eye1X = x + size - eyeOffset; eye1Y = y + eyeOffset;
+            eye2X = x + size - eyeOffset; eye2Y = y + size - eyeOffset;
+        } else if (direction.x === -1) {
+            eye1X = x + eyeOffset; eye1Y = y + eyeOffset;
+            eye2X = x + eyeOffset; eye2Y = y + size - eyeOffset;
+        } else if (direction.y === -1) {
+            eye1X = x + eyeOffset; eye1Y = y + eyeOffset;
+            eye2X = x + size - eyeOffset; eye2Y = y + eyeOffset;
+        } else {
+            eye1X = x + eyeOffset; eye1Y = y + size - eyeOffset;
+            eye2X = x + size - eyeOffset; eye2Y = y + size - eyeOffset;
         }
 
         ctx.fillStyle = '#1a1a2e';

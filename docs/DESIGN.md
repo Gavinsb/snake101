@@ -1,4 +1,4 @@
-# Design Document & Version Record - Snake Game v3.0
+# Design Document & Version Record - Snake Game v3.1
 
 ## System Architecture (v2.0)
 
@@ -186,6 +186,33 @@ nextDirection: {x, y} // buffered input (applied next tick)
 
 ---
 
+### v3.1 - Code Quality & Bug Fixes (2026-07-11)
+
+**Scope Delivered**
+- **Fix inverted `inputResponsiveness` formula** (`js/game.js`): was `threshold = speed * (1 - clamp)`, corrected to `threshold = speed * clamp`. Previously 0.0 (intended deterministic) fired immediately while 1.0 (intended snappy) had no effect — fully reversed.
+- **Declare `_lastGridSize`** on `Render` object (`js/render.js`): was an implicit global, now properly declared.
+- **Fix `isHighScore` scope** (`js/settings.js`): now checks against the 5th-place score (`scores[4]`) instead of the absolute last stored score (up to 50). A score that beats only 50th place no longer triggers the misleading "NEW HIGH SCORE!" prompt.
+- **Add `"use strict"`** to all 9 JS modules to catch undeclared variables and other silent errors.
+- **Remove empty `_onFoodEaten` method** and its event binding (`js/game.js`): audio already subscribed independently.
+- **Simplify `closeSettings`** (`js/game.js`): removed tautological `this.state !== STATE.GAME_OVER` clause.
+- **Replace `switch(true)` anti-pattern** in `_drawEyes` (`js/render.js`) with `if/else` chain.
+- **Remove dead CSS** (`css/style.css`): `body[data-theme="high-contrast"]` selector (high contrast uses `data-contrast`, not a theme) and `transition` on `.powerup-timer-fill` (fought with 50ms JS interval causing jitter).
+- **Cleanup stale Future Extensions** (`docs/DESIGN.md`): removed already-implemented features (interpolated rendering, sound).
+
+**Resolved Limitations (from v3)**
+| v3 Limitation | v3.1 Resolution |
+|---------------|-----------------|
+| Accumulator clamp perturbs determinism slightly (inverted formula) | Formula corrected; 0.0 = pure tick timing, 1.0 = snappy |
+| `_lastGridSize` undeclared global | Declared on `Render` object |
+
+**Testing Done**
+- Syntax: `node -c js/<file>` on all 9 modules — all pass with `"use strict"`
+- Responsiveness: slider 0.0 = deterministic tick timing; slider 1.0 = next-tick fire
+- High score: new score that beats 5th place shows prompt; 6th+ does not
+- All overlays, settings, game loop, powerups verified unchanged
+
+---
+
 ### v3.0 - Input Responsiveness, Bug Fixes & Directory Restructure (2026-07-06)
 **Scope Delivered**
 - **Input queue** (`Game.inputQueue`, `INPUT_QUEUE_MAX=3`): validates each enqueued turn against the *last queued* entry (not committed direction) — rapid `RIGHT→DOWN→LEFT` now fires three distinct turns across three ticks instead of dropping/skipping. Replaces single `nextDirection` slot.
@@ -230,7 +257,7 @@ nextDirection: {x, y} // buffered input (applied next tick)
 
 ---
 
-## Files Reference (v3.0)
+## Files Reference (v3.1)
 
 | File | Purpose |
 |------|---------|
@@ -254,10 +281,10 @@ nextDirection: {x, y} // buffered input (applied next tick)
 
 | Feature | Complexity | Notes |
 |---------|------------|-------|
-| Interpolated rendering | Low | `alpha = accumulator / speed` in render |
-| Sound (Web Audio API) | Low | Eat/move/death sounds |
+| More wall patterns (only 5 designs) | Low | Cycle becomes repetitive at high levels |
+| Stackable power-ups | Medium | Currently replace, don't stack |
+| Persistent "level reached" stat | Low | Track in localStorage |
 | Particle effects on eat | Medium | Canvas particles |
-| Level/wall modes | Medium | Configurable grids |
 | Multiplayer (WebRTC) | High | Separate architecture |
 | Replay system | Medium | Record inputs, deterministic replay |
 

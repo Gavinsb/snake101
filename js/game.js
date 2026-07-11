@@ -1,3 +1,5 @@
+'use strict';
+
 const SPEED_INCREMENT = 2;
 const MIN_SPEED = 60;
 const INPUT_QUEUE_MAX = 3;
@@ -159,7 +161,6 @@ const Game = {
     },
 
     _bindEventBus() {
-        Events.on('food:eaten', (data) => this._onFoodEaten(data));
         Events.on('powerup:state', (data) => this._renderPowerupBar(data));
         Events.on('level:up', (data) => {
             this.ui.level.textContent = data.level;
@@ -214,7 +215,7 @@ const Game = {
 
         const clamp = Settings.get('inputResponsiveness');
         if (clamp > 0) {
-            const threshold = this.speed * (1 - clamp);
+            const threshold = this.speed * clamp;
             if (this._accumulator < threshold) {
                 this._accumulator = threshold;
             }
@@ -428,10 +429,6 @@ const Game = {
         Events.emit('snake:move', { head });
     },
 
-    _onFoodEaten(data) {
-        // audio handled by audio module via same event
-    },
-
     _renderState(gameOver = false) {
         return {
             snake: this.snake,
@@ -490,9 +487,7 @@ const Game = {
 
     closeSettings() {
         this.ui.settingsOverlay.classList.add('hidden');
-        if (this.state === STATE.PAUSED && this.state !== STATE.GAME_OVER) {
-            // remain paused; user resumes manually
-        }
+        // remain paused if we were paused; user resumes manually
     }
 };
 

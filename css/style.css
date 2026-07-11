@@ -221,7 +221,6 @@ body {
 .powerup-timer-fill {
     height: 100%;
     background: var(--accent);
-    transition: width 0.1s linear;
 }
 
 .canvas-wrapper {
@@ -644,10 +643,6 @@ body {
 
 @media (prefers-contrast: high) {
     :root {
-        --border: var(--text);
-        --grid-line: var(--text-dim);
-    }
-    body[data-theme="high-contrast"] {
         --border: var(--text);
         --grid-line: var(--text-dim);
     }
